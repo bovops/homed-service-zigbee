@@ -88,7 +88,6 @@ void ZigBee::togglePermitJoin(void)
 void ZigBee::updateDevice(const QString &deviceName, const QString &name, const QString &note, bool active, bool discovery, bool cloud)
 {
     const Device &device = m_devices->byName(deviceName), &other = m_devices->byName(name);
-    bool check = false;
 
     if (device.isNull() || device->removed() || device->logicalType() == LogicalType::Coordinator)
         return;
@@ -99,7 +98,8 @@ void ZigBee::updateDevice(const QString &deviceName, const QString &name, const 
         emit deviceEvent(device.data(), Event::deviceNameDuplicate);
         return;
     }
-    else if (device->name() != name)
+
+    if (device->name() != name)
     {
         emit deviceEvent(device.data(), Event::deviceAboutToRename);
 
@@ -107,34 +107,19 @@ void ZigBee::updateDevice(const QString &deviceName, const QString &name, const 
             m_devices->remove(other->ieeeAddress());
 
         device->setName(name.isEmpty() ? device->ieeeAddress().toHex(':') : name.trimmed());
-        check = true;
-    }
-
-    if (device->note() != note)
-    {
-        device->setNote(note);
-        check = true;
     }
 
     if (device->active() != active)
     {
         device->setAvailability(active ? Availability::Unknown : Availability::Inactive);
         device->setActive(active);
-        check = true;
     }
 
-    if (device->discovery() != discovery || device->cloud() != cloud)
-    {
-        device->setDiscovery(discovery);
-        device->setCloud(cloud);
-        check = true;
-    }
+    device->setNote(note);
+    device->setDiscovery(discovery);
+    device->setCloud(cloud);
 
-    if (check)
-    {
-        emit deviceEvent(device.data(), Event::deviceUpdated);
-        m_devices->storeDatabase();
-    }
+    emit deviceEvent(device.data(), Event::deviceUpdated);
 }
 
 void ZigBee::removeDevice(const QString &deviceName, bool force)
